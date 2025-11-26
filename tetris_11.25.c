@@ -11,11 +11,11 @@
 #define Block_SIZE 4
 #define Board_Heiht 25
 #define Board_Width 17
-#define Block_Test_Index 6
+#define Block_Test_Index 2
 int Board_x = 20;
 int Board_y = 10;
-int x = 32; //블록 초기 x 값
-int y = 9;//블록 초기 y 값
+int x = 32; //블록 초기 x 값, 현제 블록의 커서
+int y = 9;//블록 초기 y 값, 현제 블록의 커서
 int change = 0; //블록 방향
 
 void gotoxy(int x, int y) { //x, y로 커서 이동 <- x, y에 좌표 입력
@@ -30,12 +30,12 @@ void CursorView(char show) {
 	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &ConsoleCursor);
 }
 
-void creatBoard(int Board[Board_Heiht][Board_Width]) {
+void creatBoard(int Board[Board_Heiht][Board_Width]) { //배경 보드 생성
 	gotoxy(Board_x, Board_y);
 	for (int H = 0; H < Board_Heiht; H++)
 	{
 		for (int W = 0; W < Board_Width; W++) {
-			if (Board[H][W]==1)
+			if (Board[H][W] == 1)
 			{
 				gotoxy(Board_x + W * 2, Board_y + H);
 				printf("□");
@@ -44,14 +44,14 @@ void creatBoard(int Board[Board_Heiht][Board_Width]) {
 	}
 }
 
-void creatBlock(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) {
+void creatBlock(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) {// 7개의 블럭 출력 반복문
 	for (int col = 0; col < 4; col++) // 블럭 출력 반복문
 	{
 		for (int row = 0; row < 4; row++)
 		{
 			if (blocks[Block_Test_Index][change][col][row] == 1)
 			{
-				gotoxy(x + row*2, y + col);
+				gotoxy(x + row * 2, y + col);
 				printf("□");
 			}
 		}
@@ -65,7 +65,7 @@ int checkLeftTouck(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) 
 		{
 			if (blocks[Block_Test_Index][change][col][row] == 1)
 			{
-				if (row == 0){
+				if (row == 0) {
 					return 20;
 				}
 				else if (row == 1) {
@@ -80,7 +80,7 @@ int checkLeftTouck(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) 
 }
 
 int checkRightTouck(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) {
-	for (int row = 3; row >1; row--) // 블럭 출력 반복문
+	for (int row = 3; row > 1; row--) // 블럭 출력 반복문
 	{
 		for (int col = 0; col < 4; col++)
 		{
@@ -99,8 +99,8 @@ int checkRightTouck(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE])
 		}
 	}
 }
-
-int checkCollision(int x, int y, int rot, int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE], int Board[Board_Heiht][Board_Width]) {
+//아래 함수 수정해야됨 1
+int checkCollision(int x, int y, int rot, int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE], int Board[Board_Heiht][Board_Width]) { //반박자 늦게 반응(부딛히기전에 접근이 안되야 되는데 부딛히고 접근금지)
 	for (int col = 0; col < 4; col++) // y
 	{
 		for (int row = 0; row < 4; row++) // x
@@ -120,48 +120,32 @@ int checkCollision(int x, int y, int rot, int blocks[Block_Kinds][Block_SIZE][Bl
 
 				// 2. 보드 배열에서 해당 위치가 벽(1)인지 확인
 				if (Board[boardY][boardX] == 1) {
-					return 1; // 충돌 (벽이나 바닥)
+					return 1; // 충돌 (벽or 바닥)
 				}
 			}
 		}
 	}
 	return 0; // 충돌 없음
 }
-
-int checkBottom(int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE]) {//합이 2이면 멈추게 만들어야 됨 -> 블록의 유형 체크
-	for (int p = 0; p < 4; p++)
+//아래 함수 수정해야도미 2
+void lockBlock(int x, int y, int rot, int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE], int Board[][Board_Width]) { //블록을 배경에 저장
+	for (int col = 0; col < 4; col++) // 블록 내부 y축 (세로)
 	{
-		if (blocks[Block_Test_Index][change][3][p] == 1) {
-			return 3;
-		}
-	}
-	for (int p = 0; p < 4; p++)
-	{
-		if (blocks[Block_Test_Index][change][2][p] == 1) {
-			return 2;
-		}
-	}
-	
-
-	for (int p = 0; p < 4; p++)
-	{
-		if (blocks[Block_Test_Index][change][1][p] == 1) {
-			return 1;
-		}
-	}
-}
-int holdBlcokBottom(int index, int blocks[Block_Kinds][Block_SIZE][Block_SIZE][Block_SIZE],int Board[][Board_Width]) { //블록의 합이 2이면 블럭에 저장
-	if (index == 3)
-	{
-		for (int row = 0; row < 4; row++) {
-			if (blocks[Block_Test_Index][change][4][row])
+		for (int row = 0; row < 4; row++) // 블록 내부 x축 (가로)
+		{
+			// 1. 현재 회전 상태(rot)의 블록 해당 위치에 '1'이 있는지 확인
+			if (blocks[Block_Test_Index][rot][col][row] == 1)
 			{
-				for (int x = 0; x < 4; x++)
-				{
-					for (int y = 0; y < 4; y++) {
+				// 2. 화면 좌표(x, y)를 보드 배열 인덱스로 변환 (checkCollision에 있는 공식 활용)
+				// x는 2칸씩 차지하므로 (x - Board_x) / 2
+				// y는 1칸씩 차지하므로 (y - Board_y)
 
-					}
-				}
+				int boardX = (x - Board_x) / 2 + row;
+				int boardY = (y - Board_y) + col;
+
+				// 3. 보드 배열의 해당 위치를 1(벽/블록)로 변경
+				// 주의: boardY, boardX가 배열 범위를 넘지 않는지 확인하는 안전장치가 있으면 더 좋음
+				Board[boardY][boardX] = 1;
 			}
 		}
 	}
@@ -327,11 +311,8 @@ int main() {
 				int nextRot = (change + 1) % 4; // 다음 회전 모양 예측
 				if (checkCollision(x, y, nextRot, blocks, Board) == 0) {
 					change = nextRot; // 안전하니까 실제로 변경
-					system("cls");
-					creatBoard(Board);
-					gotoxy(x, y);
-					creatBlock(blocks);
 				}
+				system("cls");
 				creatBoard(Board);
 				gotoxy(x, y);
 				creatBlock(blocks);
@@ -343,7 +324,7 @@ int main() {
 			switch (nkey)
 			{
 			case LEFT:
-				if (x - 2 == checkLeftTouck(blocks))
+				if ((x - 2 == checkLeftTouck(blocks)) || (checkCollision(x, y, change, blocks, Board) == 1))
 				{
 					continue;
 				}
@@ -353,7 +334,7 @@ int main() {
 				creatBlock(blocks);
 				break;
 			case RIGHT:
-				if (x + 2 == checkRightTouck(blocks))
+				if ((x + 2 == checkRightTouck(blocks))||(checkCollision(x, y, change, blocks, Board) == 1))
 				{
 					continue;
 				}
@@ -369,8 +350,10 @@ int main() {
 				creatBlock(blocks);
 				break;
 			case DOWN:
-				int bottomIndex = checkBottom(blocks);
-
+				if (checkCollision(x, y, change, blocks, Board) == 1) { //바닥 터치
+					lockBlock(x, y, change, blocks, Board);
+					continue;
+				}
 				system("cls");
 				creatBoard(Board);
 				gotoxy(x, ++y);
@@ -380,4 +363,3 @@ int main() {
 		}
 	}
 }
-
